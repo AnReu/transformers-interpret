@@ -326,16 +326,24 @@ class PairwiseSequenceClassificationExplainer(SequenceClassificationExplainer):
         self, text1: Union[List, str], text2: Union[List, str]
     ) -> Tuple[torch.Tensor, torch.Tensor, int]:
 
-        t1_ids = self.tokenizer.encode(text1, add_special_tokens=False)
-        t2_ids = self.tokenizer.encode(text2, add_special_tokens=False)
-        input_ids = self.tokenizer.encode([text1, text2], add_special_tokens=True)
+        t1_ids = self.tokenizer.encode(text1, add_special_tokens=False, truncation=True, max_length=self.tokenizer.model_max_length)
+        t2_ids = self.tokenizer.encode(text2, add_special_tokens=False, truncation=True, max_length=self.tokenizer.model_max_length)
+        input_ids = self.tokenizer.encode([text1, text2], add_special_tokens=True, truncation=True, max_length=self.tokenizer.model_max_length)
+        
+        start = input_ids.index(self.tokenizer.cls_token_id)
+        sep = input_ids.index(self.tokenizer.sep_token_id)
+        end = len(input_ids)
+        
+        len1 = sep - 1
+        len2 = end - len1 - 3
+        
         if self.model.config.model_type == "roberta":
             ref_input_ids = (
                 [self.cls_token_id]
-                + [self.ref_token_id] * len(t1_ids)
+                + [self.ref_token_id] * len1
                 + [self.sep_token_id]
                 + [self.sep_token_id]
-                + [self.ref_token_id] * len(t2_ids)
+                + [self.ref_token_id] * len2
                 + [self.sep_token_id]
             )
 
@@ -343,9 +351,9 @@ class PairwiseSequenceClassificationExplainer(SequenceClassificationExplainer):
 
             ref_input_ids = (
                 [self.cls_token_id]
-                + [self.ref_token_id] * len(t1_ids)
+                + [self.ref_token_id] * len1
                 + [self.sep_token_id]
-                + [self.ref_token_id] * len(t2_ids)
+                + [self.ref_token_id] * len2
                 + [self.sep_token_id]
             )
 
